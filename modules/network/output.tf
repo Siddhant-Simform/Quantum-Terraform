@@ -10,22 +10,22 @@ output "virtualnetwork_name" {
 
 output "subnet_agw_id" {
   description = "The ID of the Application Gateway subnet."
-  value       = azurerm_subnet.agw.id
+  value       = azurerm_subnet.subnets["agw"].id
 }
 
 output "subnet_pe_id" {
   description = "The ID of the Private Endpoint subnet."
-  value       = azurerm_subnet.pe.id
+  value       = azurerm_subnet.subnets["pe"].id
 }
 
 output "subnet_db_id" {
   description = "The ID of the Database subnet."
-  value       = azurerm_subnet.db.id
+  value       = azurerm_subnet.subnets["db"].id
 }
 
 output "subnet_app_id" {
   description = "The ID of the Application/Backend subnet."
-  value       = azurerm_subnet.app.id
+  value       = azurerm_subnet.subnets["app"].id
 }
 
 output "private_dns_zone_id" {

@@ -6,42 +6,53 @@ resource "azurerm_virtual_network" "virtualnetwork" {
   tags                = var.tags
 }
 
-resource "azurerm_subnet" "agw" {
-  name                 = var.subnet_agw_name
-  resource_group_name  = var.resource_group_name
-  virtual_network_name = azurerm_virtual_network.virtualnetwork.name
-  address_prefixes     = [var.subnet_agw_cidr]
-}
-
-resource "azurerm_subnet" "pe" {
-  name                              = var.subnet_pe_name
-  resource_group_name               = var.resource_group_name
-  virtual_network_name              = azurerm_virtual_network.virtualnetwork.name
-  address_prefixes                  = [var.subnet_pe_cidr]
-  private_endpoint_network_policies = var.subnet_pe_network_policies
-}
-
-resource "azurerm_subnet" "db" {
-  name                 = var.subnet_db_name
-  resource_group_name  = var.resource_group_name
-  virtual_network_name = azurerm_virtual_network.virtualnetwork.name
-  address_prefixes     = [var.subnet_db_cidr]
-  service_endpoints    = var.subnet_db_service_endpoints
-
-  delegation {
-    name = "db-delegation"
-    service_delegation {
-      name    = "Microsoft.DBforPostgreSQL/flexibleServers"
-      actions = ["Microsoft.Network/virtualNetworks/subnets/join/action"]
+# Delegation lookup map — keeps tfvars clean (use a simple string key)
+locals {
+  delegation_configs = {
+    postgresql = {
+      name = "db-delegation"
+      service_delegation = {
+        name    = "Microsoft.DBforPostgreSQL/flexibleServers"
+        actions = ["Microsoft.Network/virtualNetworks/subnets/join/action"]
+      }
     }
+    appservice = {
+      name = "app-delegation"
+      service_delegation = {
+        name    = "Microsoft.Web/serverFarms"
+        actions = ["Microsoft.Network/virtualNetworks/subnets/action"]
+      }
+    }
+  }
+
+  # Enrich each subnet entry with resolved delegation object
+  subnets = {
+    for key, subnet in var.subnets : key => merge(subnet, {
+      delegation_config = subnet.delegation != null ? local.delegation_configs[subnet.delegation] : null
+      pe_network_policy = key == "pe" ? "Disabled" : "Enabled"
+    })
   }
 }
 
-resource "azurerm_subnet" "app" {
-  name                 = var.subnet_app_name
+resource "azurerm_subnet" "subnets" {
+  for_each             = local.subnets
+  name                 = each.value.name
   resource_group_name  = var.resource_group_name
   virtual_network_name = azurerm_virtual_network.virtualnetwork.name
-  address_prefixes     = [var.subnet_app_cidr]
+  address_prefixes     = [each.value.cidr]
+  service_endpoints    = each.value.service_endpoints
+  private_endpoint_network_policies = each.value.pe_network_policy
+
+  dynamic "delegation" {
+    for_each = each.value.delegation_config != null ? [each.value.delegation_config] : []
+    content {
+      name = delegation.value.name
+      service_delegation {
+        name    = delegation.value.service_delegation.name
+        actions = delegation.value.service_delegation.actions
+      }
+    }
+  }
 }
 
 resource "azurerm_network_security_group" "nsg_db" {
@@ -66,7 +77,7 @@ resource "azurerm_network_security_rule" "nsg_rule_1" {
 }
 
 resource "azurerm_subnet_network_security_group_association" "db" {
-  subnet_id                 = azurerm_subnet.db.id
+  subnet_id                 = azurerm_subnet.subnets["db"].id
   network_security_group_id = azurerm_network_security_group.nsg_db.id
 }
 

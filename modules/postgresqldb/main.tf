@@ -25,4 +25,10 @@ resource "azurerm_postgresql_flexible_server" "postgresqldbsvr" {
   identity {
     type = "SystemAssigned"
   }
+
+  lifecycle {
+    ignore_changes = [
+      zone,
+    ]
+  }
 }

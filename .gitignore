@@ -9,3 +9,4 @@
 
 # Plan files
 *.tfplan
+**/secrets.tfvars
