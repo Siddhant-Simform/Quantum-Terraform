@@ -15,8 +15,8 @@ resource "azurerm_storage_account" "this" {
   min_tls_version = "TLS1_2"
 
   # Disable ALL public blob access — only Private Endpoint traffic is allowed
-  public_network_access_enabled   = true
-  allow_nested_items_to_be_public = true
+  public_network_access_enabled   = false
+  allow_nested_items_to_be_public = false
 
   # ── Blob properties ───────────────────────────────────────────────────────
   blob_properties {

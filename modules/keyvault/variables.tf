@@ -41,3 +41,14 @@ variable "role_definition_name" {
   description = "The name of the role to assign to the principal."
   default     = "Key Vault Secrets Officer"
 }
+
+variable "virtual_network_id" {
+  type        = string
+  description = "The ID of the virtual network to link the Private DNS Zone."
+}
+
+variable "private_endpoint_subnet_id" {
+  type        = string
+  description = "The ID of the subnet where the Private Endpoint will be created."
+}
+

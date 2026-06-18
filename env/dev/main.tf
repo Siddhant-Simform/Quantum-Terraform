@@ -43,6 +43,10 @@ module "quantumems-dev-keyvault-cin" {
   tags                = var.tags
   keyvault_name       = "quantumems-${each.key}-kv-cin"
   sku_name            = "standard"
+  
+  # Pass networking resources for private endpoint and DNS linking
+  virtual_network_id         = module.quantumems-dev-network-cin[each.key].virtualnetwork_id
+  private_endpoint_subnet_id = module.quantumems-dev-network-cin[each.key].subnet_pe_id
 }
 
 module "quantumems-dev-static-app-cin" {
